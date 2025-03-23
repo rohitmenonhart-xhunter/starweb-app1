@@ -55,12 +55,45 @@ try {
     
     // Additional integrity check for packaged app
     console.log("Starting secure application...");
+    
+    // Create a logs directory for debugging
+    const logsDir = path.join(appDir, 'logs');
+    if (!fs.existsSync(logsDir)) {
+      try {
+        fs.mkdirSync(logsDir);
+      } catch (error) {
+        console.warn("Could not create logs directory:", error.message);
+        // Continue execution, non-critical error
+      }
+    }
+    
+    // Log startup information
+    const logFile = path.join(logsDir, `startup-${new Date().toISOString().replace(/:/g, '-')}.log`);
+    try {
+      fs.writeFileSync(logFile, `StarWeb Startup Log - ${new Date().toISOString()}\n`);
+      fs.appendFileSync(logFile, `Platform: ${process.platform}\n`);
+      fs.appendFileSync(logFile, `NodeJS: ${process.version}\n`);
+      fs.appendFileSync(logFile, `AppDir: ${appDir}\n`);
+      
+      // Check for critical files
+      const serverJsPath = path.join(appDir, 'server.js');
+      const exists = fs.existsSync(serverJsPath);
+      fs.appendFileSync(logFile, `server.js exists: ${exists}\n`);
+      
+      if (!exists) {
+        fs.appendFileSync(logFile, "CRITICAL ERROR: server.js not found, application cannot start\n");
+      }
+    } catch (error) {
+      console.warn("Error writing to log file:", error.message);
+      // Continue execution, non-critical error
+    }
   } else {
     // When running as a script in development
     appDir = path.resolve(__dirname, '..');
   }
 } catch (e) {
   // Fallback
+  console.error("Error determining application directory:", e.message);
   appDir = path.resolve(__dirname, '..');
 }
 
@@ -238,10 +271,41 @@ function startApplication() {
   const isPkg = typeof process.pkg !== 'undefined';
   let startCommand;
   
+  // Verify server.js exists
+  const serverJsPath = path.join(appDir, 'server.js');
+  if (!fs.existsSync(serverJsPath)) {
+    console.error('Critical error: server.js file not found at:', serverJsPath);
+    console.error('The application cannot start without this file.');
+    
+    // Create error log
+    try {
+      const logsDir = path.join(appDir, 'logs');
+      if (!fs.existsSync(logsDir)) {
+        fs.mkdirSync(logsDir);
+      }
+      
+      const errorLogPath = path.join(logsDir, 'critical-error.log');
+      fs.writeFileSync(errorLogPath, `Server.js not found at ${serverJsPath}\n`);
+      fs.appendFileSync(errorLogPath, `Timestamp: ${new Date().toISOString()}\n`);
+      fs.appendFileSync(errorLogPath, `AppDir: ${appDir}\n`);
+      fs.appendFileSync(errorLogPath, `Directory content: ${fs.readdirSync(appDir).join(', ')}\n`);
+      
+      console.error('Error log written to:', errorLogPath);
+    } catch (error) {
+      console.error('Failed to write error log:', error.message);
+    }
+    
+    rl.question('Press Enter to exit...', () => {
+      process.exit(1);
+    });
+    
+    return;
+  }
+  
   if (isPkg) {
     // When running as a packaged executable, we can directly start the server
     // because we've bundled everything into the executable
-    startCommand = spawn('node', [path.join(appDir, 'server.js')], {
+    startCommand = spawn('node', [serverJsPath], {
       cwd: appDir,
       shell: true,
       stdio: 'inherit',
@@ -260,9 +324,28 @@ function startApplication() {
     console.log(`Application closed with code ${code}.`);
     process.exit(code);
   });
-  
+ 
   startCommand.on('error', (err) => {
     console.error(`Failed to start application: ${err.message}`);
+    
+    // Create error log
+    try {
+      const logsDir = path.join(appDir, 'logs');
+      if (!fs.existsSync(logsDir)) {
+        fs.mkdirSync(logsDir);
+      }
+      
+      const errorLogPath = path.join(logsDir, 'startup-error.log');
+      fs.writeFileSync(errorLogPath, `Failed to start application: ${err.message}\n`);
+      fs.appendFileSync(errorLogPath, `Timestamp: ${new Date().toISOString()}\n`);
+      fs.appendFileSync(errorLogPath, `AppDir: ${appDir}\n`);
+      fs.appendFileSync(errorLogPath, `Command: node ${serverJsPath}\n`);
+      
+      console.error('Error log written to:', errorLogPath);
+    } catch (error) {
+      console.error('Failed to write error log:', error.message);
+    }
+    
     process.exit(1);
   });
 }
@@ -372,12 +455,34 @@ EMAIL_SERVICE=gmail`);
     }
     
   } catch (error) {
-    console.error('Error:', error.message);
+    console.error('Error during startup:', error.message);
+    
+    // Create error log
+    try {
+      const logsDir = path.join(appDir, 'logs');
+      if (!fs.existsSync(logsDir)) {
+        fs.mkdirSync(logsDir);
+      }
+      
+      const errorLogPath = path.join(logsDir, 'startup-exception.log');
+      fs.writeFileSync(errorLogPath, `Startup exception: ${error.message}\n`);
+      fs.appendFileSync(errorLogPath, `Timestamp: ${new Date().toISOString()}\n`);
+      fs.appendFileSync(errorLogPath, `AppDir: ${appDir}\n`);
+      fs.appendFileSync(errorLogPath, `Stack trace: ${error.stack}\n`);
+      
+      console.error('Error log written to:', errorLogPath);
+    } catch (logError) {
+      console.error('Failed to write error log:', logError.message);
+    }
+    
     rl.question('Press Enter to exit...', () => {
       process.exit(1);
     });
   }
 }
 
-// Run the main function
-main(); 
+// Call the main function
+main().catch(error => {
+  console.error('Uncaught exception during startup:', error);
+  process.exit(1);
+}); 

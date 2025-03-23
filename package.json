@@ -24,11 +24,15 @@
     "assets": [
       "dist/**/*",
       "public/**/*",
-      "server.js"
+      "server.js",
+      "src/api/**/*",
+      ".env",
+      "node_modules/**/*"
     ],
     "outputPath": "dist",
     "scripts": [
-      "scripts/start-app.js"
+      "scripts/start-app.js",
+      "server.js"
     ],
     "targets": [
       "node18-win-x64",
