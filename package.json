@@ -3,15 +3,36 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
+  "bin": "scripts/start-app.js",
   "scripts": {
     "dev": "concurrently \"vite\" \"node server.js\"",
-    "frontend": "vite",
-    "backend": "node server.js",
     "build": "vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "start": "node server.js",
-    "start:render": "PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium node server.js"
+    "package-win": "pkg . --targets node18-win-x64 --output dist/starweb-win.exe --compress GZip --options no-warnings=true",
+    "package-mac": "pkg . --targets node18-macos-x64 --output dist/starweb-mac --compress GZip --options no-warnings=true",
+    "package-linux": "pkg . --targets node18-linux-x64 --output dist/starweb-linux --compress GZip --options no-warnings=true",
+    "package-all": "npm run package-win && npm run package-mac && npm run package-linux",
+    "postpackage-win": "node scripts/secure-package.js win",
+    "postpackage-mac": "node scripts/secure-package.js mac",
+    "postpackage-linux": "node scripts/secure-package.js linux",
+    "secure-package": "node scripts/secure-package.js"
+  },
+  "pkg": {
+    "assets": [
+      "dist/**/*",
+      "public/**/*",
+      "server.js"
+    ],
+    "outputPath": "dist",
+    "scripts": [
+      "scripts/start-app.js"
+    ],
+    "targets": [
+      "node18-win-x64",
+      "node18-macos-x64", 
+      "node18-linux-x64"
+    ]
   },
   "dependencies": {
     "axios": "^1.6.7",

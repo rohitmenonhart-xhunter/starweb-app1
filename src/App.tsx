@@ -2370,7 +2370,7 @@ The website should not only fix the existing issues but set a new standard for w
                 }}
                 onClick={() => {
                   // Test the email functionality
-                  fetch('https://starweb-app1.onrender.com/api/send-test-email')
+                  fetch('http://localhost:3001/api/send-test-email')
                     .then(response => response.json())
                     .then(data => {
                       console.log('Test email response:', data);
@@ -2381,8 +2381,8 @@ The website should not only fix the existing issues but set a new standard for w
                       }
                     })
                     .catch(error => {
-                      console.error('Test email error:', error);
-                      toast.error(`Test email error: ${error.message}`);
+                      console.error('Error sending test email:', error);
+                      toast.error(`Error: ${error.message}`);
                     });
                 }}
               >

@@ -105,6 +105,72 @@ If you prefer to run the application without Docker:
    node server.js
    ```
 
+## Standalone PC Software
+
+StarWeb can be packaged as a standalone desktop application for Windows, macOS, and Linux.
+
+### Quick Start
+
+The easiest way to run StarWeb as a desktop application is to:
+
+1. Download the latest release for your platform from the releases page
+2. Run the installer (Windows) or extract the archive (macOS/Linux)
+3. Launch the application
+
+### Packaging Your Own Standalone Application
+
+If you want to package the application yourself:
+
+#### Option 1: Simple Scripts (Requires Node.js)
+
+1. Run the appropriate script from the `scripts` directory:
+   - Windows: `scripts/start-app.bat`
+   - macOS/Linux: `scripts/start-app.sh`
+
+These scripts will automatically:
+- Check if Node.js is installed
+- Install dependencies if needed
+- Create a default .env file if one doesn't exist
+- Start the application
+
+#### Option 2: Windows Installer (Requires Node.js)
+
+For Windows users, you can build an installer:
+
+1. Install NSIS from [nsis.sourceforge.net](https://nsis.sourceforge.net/Download)
+2. Open NSIS and compile the `scripts/installer.nsi` file
+3. Distribute the resulting `StarWeb-Setup.exe` file
+
+#### Option 3: Standalone Executables (No Node.js Required)
+
+You can package the application with Node.js included:
+
+1. Install pkg globally:
+   ```bash
+   npm install -g pkg
+   ```
+
+2. Package the application:
+   ```bash
+   # For Windows
+   npm run package-win
+   
+   # For macOS
+   npm run package-mac
+   
+   # For Linux
+   npm run package-linux
+   
+   # For all platforms
+   npm run package-all
+   ```
+
+The packaged executables will be in the `dist` directory.
+
+#### Option 4: Full Desktop Application with Electron
+
+For a more native desktop experience, you could convert this app to use Electron. This would require additional development work but would provide a better desktop experience.
+
 ## How It Works
 
 1. Enter a URL in the analysis tool

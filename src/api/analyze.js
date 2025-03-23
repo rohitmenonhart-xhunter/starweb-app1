@@ -835,65 +835,22 @@ RECOMMENDATIONS (provide at least 4-5 specific actionable recommendations with e
 export default async function analyze(url) {
   let browser;
   try {
-    console.log('Starting website analysis for:', url);
-    console.log('Environment variables for Puppeteer:', {
-      PUPPETEER_EXECUTABLE_PATH: process.env.PUPPETEER_EXECUTABLE_PATH || 'Not set',
-      PUPPETEER_SKIP_CHROMIUM_DOWNLOAD: process.env.PUPPETEER_SKIP_CHROMIUM_DOWNLOAD || 'Not set'
-    });
-    
-    // Configure Puppeteer options with special handling for Render
-    const isRender = process.env.RENDER || process.env.RENDER_EXTERNAL_URL;
-    console.log('Running in Render environment:', !!isRender);
-    
-    const puppeteerOptions = {
+    // Launch browser and navigate to URL
+    browser = await puppeteer.launch({
       headless: 'new',
-      args: [
-        '--no-sandbox', 
-        '--disable-setuid-sandbox',
-        '--disable-dev-shm-usage',
-        '--disable-gpu',
-        '--single-process'
-      ]
-    };
-    
-    // Use the executable path from env if available
-    if (process.env.PUPPETEER_EXECUTABLE_PATH) {
-      console.log(`Using Chrome from env: ${process.env.PUPPETEER_EXECUTABLE_PATH}`);
-      puppeteerOptions.executablePath = process.env.PUPPETEER_EXECUTABLE_PATH;
-    }
-    
-    // Launch browser with the configured options
-    console.log('Launching browser with options:', JSON.stringify(puppeteerOptions));
-    try {
-      browser = await puppeteer.launch(puppeteerOptions);
-      console.log('Browser launched successfully');
-    } catch (browserError) {
-      console.error('Failed to launch browser:', browserError);
-      
-      // Try to discover available browsers on the system for debugging
-      try {
-        const { execSync } = require('child_process');
-        const chromePaths = execSync('find /usr -name "chromium*" -o -name "chrome" -o -name "google-chrome*" 2>/dev/null || true').toString();
-        console.log('Available Chrome/Chromium paths:', chromePaths || 'None found');
-      } catch (e) {
-        console.error('Error while trying to find Chrome paths:', e);
-      }
-      
-      throw new Error(`Failed to launch browser: ${browserError.message}`);
-    }
+      args: ['--no-sandbox', '--disable-setuid-sandbox']
+    });
     
     const page = await browser.newPage();
     await page.setViewport({ width: 1920, height: 1080 });
     
     // Navigate to the main URL
-    console.log(`Navigating to URL: ${url}`);
     const response = await page.goto(url, {
       waitUntil: 'networkidle0',
       timeout: 30000
     });
 
     if (!response.ok()) {
-      console.error(`Failed to load page: ${response.status()} ${response.statusText()}`);
       throw new Error(`Failed to load page: ${response.status()} ${response.statusText()}`);
     }
 
@@ -946,11 +903,9 @@ export default async function analyze(url) {
     };
   } catch (error) {
     console.error('Analysis error:', error);
-    // Include more details in the error message
-    throw new Error(`Analysis failed: ${error.message} ${error.stack ? '\n' + error.stack : ''}`);
+    throw new Error(error.message || 'Failed to analyze website');
   } finally {
     if (browser) {
-      console.log('Closing browser');
       await browser.close();
     }
   }
