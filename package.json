@@ -13,10 +13,12 @@
     "package-mac": "pkg . --targets node18-macos-x64 --output dist/starweb-mac --compress GZip --options no-warnings=true",
     "package-linux": "pkg . --targets node18-linux-x64 --output dist/starweb-linux --compress GZip --options no-warnings=true",
     "package-all": "npm run package-win && npm run package-mac && npm run package-linux",
-    "postpackage-win": "node scripts/secure-package.js win",
-    "postpackage-mac": "node scripts/secure-package.js mac",
-    "postpackage-linux": "node scripts/secure-package.js linux",
-    "secure-package": "node scripts/secure-package.js"
+    "postpackage-win": "node scripts/secure-package.cjs win",
+    "postpackage-mac": "node scripts/secure-package.cjs mac",
+    "postpackage-linux": "node scripts/secure-package.cjs linux",
+    "secure-package": "node scripts/secure-package.cjs",
+    "start-package": "node scripts/package-installer.js",
+    "start": "node scripts/start-app.js"
   },
   "pkg": {
     "assets": [

@@ -24,11 +24,14 @@ The distribution process creates standalone executables for Windows, macOS, or L
 We've created a simple packaging tool that handles the entire process:
 
 ```bash
-# Make the script executable
-chmod +x scripts/package-installer.js
+# Method 1: Use the wrapper script (recommended)
+node package-app.js
 
-# Run the packaging tool
+# Method 2: Run the packaging script directly 
 node scripts/package-installer.js
+
+# Method 3: Use the npm script
+npm run start-package
 ```
 
 The tool will guide you through the packaging process:
@@ -98,6 +101,14 @@ If users encounter issues:
 - **Permission Errors**: Make sure the executable has proper permissions (especially on macOS/Linux)
 - **Blocked by Security**: On Windows, they may need to click "More info" and "Run anyway"
 - **API Key Issues**: They need to enter valid API keys when prompted
+
+## Development Troubleshooting
+
+If you encounter issues during packaging:
+
+- **Module Errors**: This project uses ES modules. Make sure to use ES module syntax (import/export) in .js files and CommonJS (require/module.exports) in .cjs files.
+- **pkg Errors**: Make sure pkg is installed globally: `npm install -g pkg`
+- **File Not Found**: Check that all paths in package.json's pkg configuration are correct
 
 ## Additional Notes
 
