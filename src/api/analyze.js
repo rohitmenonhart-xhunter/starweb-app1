@@ -835,11 +835,59 @@ RECOMMENDATIONS (provide at least 4-5 specific actionable recommendations with e
 export default async function analyze(url) {
   let browser;
   try {
-    // Launch browser and navigate to URL
-    browser = await puppeteer.launch({
+    console.log('Starting website analysis for:', url);
+    
+    // Configure Puppeteer options with special handling for Render
+    const isRender = process.env.RENDER || process.env.RENDER_EXTERNAL_URL;
+    console.log('Running in Render environment:', !!isRender);
+    
+    const puppeteerOptions = {
       headless: 'new',
-      args: ['--no-sandbox', '--disable-setuid-sandbox']
-    });
+      args: [
+        '--no-sandbox', 
+        '--disable-setuid-sandbox',
+        '--disable-dev-shm-usage',
+        '--disable-gpu'
+      ]
+    };
+    
+    // Check for different possible Chrome/Chromium paths
+    const possibleBrowserPaths = [
+      process.env.PUPPETEER_EXECUTABLE_PATH, // Use env var if set
+      '/usr/bin/chromium-browser',
+      '/usr/bin/chromium',
+      '/usr/bin/chrome',
+      '/usr/bin/google-chrome',
+      '/usr/bin/google-chrome-stable'
+    ];
+    
+    // Try to find a valid browser executable
+    for (const path of possibleBrowserPaths) {
+      if (path && require('fs').existsSync(path)) {
+        console.log(`Found browser at: ${path}`);
+        puppeteerOptions.executablePath = path;
+        break;
+      }
+    }
+    
+    // Launch browser with the configured options
+    console.log('Launching browser with options:', JSON.stringify(puppeteerOptions));
+    try {
+      browser = await puppeteer.launch(puppeteerOptions);
+      console.log('Browser launched successfully');
+    } catch (browserError) {
+      console.error('Failed to launch browser:', browserError);
+      
+      // Log environment information to help debug
+      console.log('Environment variables:', {
+        NODE_ENV: process.env.NODE_ENV,
+        PUPPETEER_EXECUTABLE_PATH: process.env.PUPPETEER_EXECUTABLE_PATH,
+        CHROME_PATH: process.env.CHROME_PATH,
+        PATH: process.env.PATH
+      });
+      
+      throw new Error(`Failed to launch browser: ${browserError.message}`);
+    }
     
     const page = await browser.newPage();
     await page.setViewport({ width: 1920, height: 1080 });
@@ -851,6 +899,7 @@ export default async function analyze(url) {
     });
 
     if (!response.ok()) {
+      console.error(`Failed to load page: ${response.status()} ${response.statusText()}`);
       throw new Error(`Failed to load page: ${response.status()} ${response.statusText()}`);
     }
 
@@ -903,9 +952,11 @@ export default async function analyze(url) {
     };
   } catch (error) {
     console.error('Analysis error:', error);
-    throw new Error(error.message || 'Failed to analyze website');
+    // Include more details in the error message
+    throw new Error(`Analysis failed: ${error.message} ${error.stack ? '\n' + error.stack : ''}`);
   } finally {
     if (browser) {
+      console.log('Closing browser');
       await browser.close();
     }
   }

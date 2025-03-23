@@ -4,8 +4,8 @@
 
 // Define possible API endpoints for AI solutions
 const API_ENDPOINTS = [
-  'http://localhost:3001/api/generate-solution',
-  'http://localhost:3002/api/generate-solution'
+  'https://starweb-app1.onrender.com/api/generate-solution',
+  '/api/generate-solution' // Fallback to relative path which will use the proxy
 ];
 
 /**

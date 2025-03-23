@@ -15,12 +15,11 @@ export const sendAnalysisEmail = async (analysis, email) => {
     const htmlReport = generateHtmlReport(analysis);
     console.log('HTML report generated, length:', htmlReport.length);
     
-    // Try to send to both possible ports in development
+    // Use the deployed backend URL or relative URL in production, fallback to local in development
     const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
     
-    // In development, try port 3001 first (which is where the server is running)
-    // In production, use a relative URL
-    const serverUrl = isLocalhost ? `http://${window.location.hostname}:3001` : '';
+    // Use the Render deployed URL, or relative path which will be proxied through Vite
+    const serverUrl = isLocalhost ? 'https://starweb-app1.onrender.com' : '';
     
     // Send the email via the server
     console.log('Sending POST request to', `${serverUrl}/api/send-email`);
@@ -45,13 +44,13 @@ export const sendAnalysisEmail = async (analysis, email) => {
         request: axiosError.request ? 'Request exists' : 'No request'
       });
       
-      // If we're in development and the first attempt failed, try the other port
-      if (isLocalhost && axiosError.message && axiosError.message.includes('Network Error')) {
+      // If first attempt failed, try the API directly
+      if (axiosError.message && axiosError.message.includes('Network Error')) {
         try {
-          console.log('Retrying with port 3002');
-          const alternateServerUrl = `http://${window.location.hostname}:3002`;
+          console.log('Retrying with direct API call');
+          const directApiUrl = 'https://starweb-app1.onrender.com';
           
-          const response = await axios.post(`${alternateServerUrl}/api/send-email`, {
+          const response = await axios.post(`${directApiUrl}/api/send-email`, {
             to: email,
             subject: `StarWeb Analysis Report - ${analysis.mainPage.title}`,
             html: htmlReport,
@@ -59,7 +58,7 @@ export const sendAnalysisEmail = async (analysis, email) => {
             siteUrl: analysis.mainPage.url
           });
           
-          console.log('Email API response (second attempt):', response.data);
+          console.log('Email API response (direct call):', response.data);
           return response.data;
         } catch (retryError) {
           console.error('Error on retry details:', {
