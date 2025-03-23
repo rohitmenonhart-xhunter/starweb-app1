@@ -836,6 +836,10 @@ export default async function analyze(url) {
   let browser;
   try {
     console.log('Starting website analysis for:', url);
+    console.log('Environment variables for Puppeteer:', {
+      PUPPETEER_EXECUTABLE_PATH: process.env.PUPPETEER_EXECUTABLE_PATH || 'Not set',
+      PUPPETEER_SKIP_CHROMIUM_DOWNLOAD: process.env.PUPPETEER_SKIP_CHROMIUM_DOWNLOAD || 'Not set'
+    });
     
     // Configure Puppeteer options with special handling for Render
     const isRender = process.env.RENDER || process.env.RENDER_EXTERNAL_URL;
@@ -847,27 +851,15 @@ export default async function analyze(url) {
         '--no-sandbox', 
         '--disable-setuid-sandbox',
         '--disable-dev-shm-usage',
-        '--disable-gpu'
+        '--disable-gpu',
+        '--single-process'
       ]
     };
     
-    // Check for different possible Chrome/Chromium paths
-    const possibleBrowserPaths = [
-      process.env.PUPPETEER_EXECUTABLE_PATH, // Use env var if set
-      '/usr/bin/chromium-browser',
-      '/usr/bin/chromium',
-      '/usr/bin/chrome',
-      '/usr/bin/google-chrome',
-      '/usr/bin/google-chrome-stable'
-    ];
-    
-    // Try to find a valid browser executable
-    for (const path of possibleBrowserPaths) {
-      if (path && require('fs').existsSync(path)) {
-        console.log(`Found browser at: ${path}`);
-        puppeteerOptions.executablePath = path;
-        break;
-      }
+    // Use the executable path from env if available
+    if (process.env.PUPPETEER_EXECUTABLE_PATH) {
+      console.log(`Using Chrome from env: ${process.env.PUPPETEER_EXECUTABLE_PATH}`);
+      puppeteerOptions.executablePath = process.env.PUPPETEER_EXECUTABLE_PATH;
     }
     
     // Launch browser with the configured options
@@ -878,13 +870,14 @@ export default async function analyze(url) {
     } catch (browserError) {
       console.error('Failed to launch browser:', browserError);
       
-      // Log environment information to help debug
-      console.log('Environment variables:', {
-        NODE_ENV: process.env.NODE_ENV,
-        PUPPETEER_EXECUTABLE_PATH: process.env.PUPPETEER_EXECUTABLE_PATH,
-        CHROME_PATH: process.env.CHROME_PATH,
-        PATH: process.env.PATH
-      });
+      // Try to discover available browsers on the system for debugging
+      try {
+        const { execSync } = require('child_process');
+        const chromePaths = execSync('find /usr -name "chromium*" -o -name "chrome" -o -name "google-chrome*" 2>/dev/null || true').toString();
+        console.log('Available Chrome/Chromium paths:', chromePaths || 'None found');
+      } catch (e) {
+        console.error('Error while trying to find Chrome paths:', e);
+      }
       
       throw new Error(`Failed to launch browser: ${browserError.message}`);
     }
@@ -893,6 +886,7 @@ export default async function analyze(url) {
     await page.setViewport({ width: 1920, height: 1080 });
     
     // Navigate to the main URL
+    console.log(`Navigating to URL: ${url}`);
     const response = await page.goto(url, {
       waitUntil: 'networkidle0',
       timeout: 30000

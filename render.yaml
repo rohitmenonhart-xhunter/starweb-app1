@@ -1,0 +1,23 @@
+services:
+  - type: web
+    name: starweb-app
+    env: node
+    plan: starter
+    branch: main
+    buildCommand: apt-get update && apt-get install -y chromium && npm install && npm run build
+    startCommand: npm run start:render
+    envVars:
+      - key: PUPPETEER_SKIP_CHROMIUM_DOWNLOAD
+        value: true
+      - key: PUPPETEER_EXECUTABLE_PATH
+        value: /usr/bin/chromium
+      - key: NODE_ENV
+        value: production
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: EMAIL_USER
+        sync: false
+      - key: EMAIL_PASS
+        sync: false
+      - key: EMAIL_SERVICE
+        value: gmail 
